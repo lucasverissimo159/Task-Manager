@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>TaskForge — Live Queue Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="brand-mark" aria-hidden="true">⚒</span>
+    <div>
+      <h1>TaskForge</h1>
+      <p class="tagline">background job queue — live floor view</p>
+    </div>
+  </div>
+  <div class="live-indicator" id="live-indicator">
+    <span class="dot"></span>
+    <span id="live-label">connecting…</span>
+  </div>
+</header>
+
+<main>
+
+  <!-- Signature element: the job lifecycle rendered as a physical process
+       line, because that ordering is real (waiting -> active -> outcome),
+       not decorative numbering. -->
+  <section class="pipeline" aria-label="Job pipeline">
+    <div class="stage" data-stage="waiting">
+      <span class="stage-eyebrow">01 · queued</span>
+      <span class="stage-count" id="count-waiting">–</span>
+      <span class="stage-label">Waiting</span>
+    </div>
+    <div class="flow-line" aria-hidden="true"></div>
+    <div class="stage stage--delayed" data-stage="delayed">
+      <span class="stage-eyebrow">02 · scheduled / backoff</span>
+      <span class="stage-count" id="count-delayed">–</span>
+      <span class="stage-label">Delayed</span>
+    </div>
+    <div class="flow-line" aria-hidden="true"></div>
+    <div class="stage stage--active" data-stage="active">
+      <span class="stage-eyebrow">03 · on the anvil</span>
+      <span class="stage-count" id="count-active">–</span>
+      <span class="stage-label">Active</span>
+    </div>
+    <div class="flow-split" aria-hidden="true">
+      <div class="flow-line flow-line--up"></div>
+      <div class="flow-line flow-line--down"></div>
+    </div>
+    <div class="stage stage--outcomes">
+      <div class="outcome outcome--completed" data-stage="completed">
+        <span class="stage-eyebrow">04a · finished</span>
+        <span class="stage-count" id="count-completed">–</span>
+        <span class="stage-label">Completed</span>
+      </div>
+      <div class="outcome outcome--dead" data-stage="dead">
+        <span class="stage-eyebrow">04b · exhausted retries</span>
+        <span class="stage-count" id="count-dead">–</span>
+        <span class="stage-label">Dead-lettered</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="readouts" aria-label="Performance readouts">
+    <div class="readout">
+      <span class="readout-value" id="readout-throughput">–</span>
+      <span class="readout-label">jobs / sec</span>
+    </div>
+    <div class="readout">
+      <span class="readout-value" id="readout-p50">–</span>
+      <span class="readout-label">p50 latency ms</span>
+    </div>
+    <div class="readout">
+      <span class="readout-value" id="readout-p95">–</span>
+      <span class="readout-label">p95 latency ms</span>
+    </div>
+    <div class="readout">
+      <span class="readout-value" id="readout-p99">–</span>
+      <span class="readout-label">p99 latency ms</span>
+    </div>
+  </section>
+
+  <section class="panel chart-panel" aria-label="Throughput over time">
+    <div class="panel-header">
+      <h2>Throughput</h2>
+      <span class="panel-note">last 60s, sampled every 1s</span>
+    </div>
+    <canvas id="throughput-chart" height="140"></canvas>
+  </section>
+
+  <section class="split">
+    <div class="panel manifest-panel" aria-label="Job manifest">
+      <div class="panel-header">
+        <h2>Job manifest</h2>
+        <div class="filter-group" id="status-filters">
+          <button class="filter-btn is-active" data-status="">all</button>
+          <button class="filter-btn" data-status="waiting">waiting</button>
+          <button class="filter-btn" data-status="delayed">delayed</button>
+          <button class="filter-btn" data-status="active">active</button>
+          <button class="filter-btn" data-status="completed">completed</button>
+          <button class="filter-btn" data-status="dead">dead</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>id</th><th>job</th><th>status</th><th>attempts</th><th>updated</th></tr>
+          </thead>
+          <tbody id="jobs-body"><tr><td colspan="5" class="empty">loading…</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="panel scrap-panel" aria-label="Dead-letter queue">
+      <div class="panel-header">
+        <h2>Scrap bin <span class="panel-note">dead-letter queue</span></h2>
+      </div>
+      <ul class="scrap-list" id="scrap-list">
+        <li class="empty">nothing scrapped yet</li>
+      </ul>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <p>TaskForge — a dependency-free job queue engine for Node.js. Built on <code>worker_threads</code>, a write-ahead log, and the standard library only.</p>
+</footer>
+
+<script src="/app.js"></script>
+</body>
+</html>

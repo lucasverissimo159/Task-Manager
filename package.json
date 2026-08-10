@@ -1,0 +1,33 @@
+{
+  "name": "taskforge",
+  "version": "1.0.0",
+  "description": "A resilient background job queue engine for Node.js, built entirely on the standard library: priority scheduling, exponential backoff with jitter, crash-safe persistence via a write-ahead log, true OS-level parallelism with worker_threads, a token-bucket rate limiter, and a live dashboard. Zero runtime dependencies.",
+  "type": "module",
+  "main": "src/index.js",
+  "engines": {
+    "node": ">=18.3.0"
+  },
+  "scripts": {
+    "start": "node src/dashboard/server.js",
+    "test": "node --test test/*.test.js",
+    "example:basic": "node examples/basic-usage.js",
+    "example:cpu": "node examples/cpu-bound-worker-threads.js",
+    "example:retries": "node examples/flaky-api-with-retries.js",
+    "cli": "node src/cli.js"
+  },
+  "keywords": [
+    "job-queue",
+    "task-queue",
+    "background-jobs",
+    "worker-threads",
+    "write-ahead-log",
+    "retry",
+    "exponential-backoff",
+    "rate-limiting",
+    "node"
+  ],
+  "author": "Lucas Veríssimo",
+  "license": "MIT",
+  "dependencies": {},
+  "devDependencies": {}
+}
