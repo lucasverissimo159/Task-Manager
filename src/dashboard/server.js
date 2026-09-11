@@ -56,6 +56,11 @@ const server = http.createServer((req, res) => {
 
   if (url.pathname === '/api/dlq') return sendJSON(res, 200, queue.dlq.list());
 
+  if (req.method === 'POST' && /^\/api\/jobs\/[^/]+\/cancel$/.test(url.pathname)) {
+    const jobId = decodeURIComponent(url.pathname.split('/')[3]);
+    return sendJSON(res, 200, { cancelled: queue.cancel(jobId) });
+  }
+
   if (req.method === 'POST' && /^\/api\/dlq\/[^/]+\/redrive$/.test(url.pathname)) {
     const jobId = decodeURIComponent(url.pathname.split('/')[3]);
     return sendJSON(res, 200, { redriven: queue.dlq.redrive(jobId) });

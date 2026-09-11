@@ -21,6 +21,7 @@ export const JobStatus = Object.freeze({
   ACTIVE: 'active',
   COMPLETED: 'completed',
   DEAD: 'dead',
+  CANCELLED: 'cancelled',
 });
 
 export class Job {

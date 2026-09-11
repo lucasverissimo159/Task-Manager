@@ -342,6 +342,7 @@ td.status-delayed { color: var(--ash); }
 td.status-active { color: var(--ember); }
 td.status-completed { color: var(--patina); }
 td.status-dead { color: var(--slag); }
+td.status-cancelled { color: var(--steel); }
 
 tr.is-new { animation: rowIn 900ms ease-out; }
 @keyframes rowIn {
@@ -377,6 +378,7 @@ tr.is-new { animation: rowIn 900ms ease-out; }
   color: var(--ash);
 }
 
+.cancel-btn,
 .redrive-btn {
   align-self: flex-start;
   font-family: var(--font-mono);
@@ -390,7 +392,10 @@ tr.is-new { animation: rowIn 900ms ease-out; }
   font-weight: 600;
   letter-spacing: 0.02em;
 }
+.cancel-btn { background: var(--steel); color: var(--paper); }
+.cancel-btn:hover,
 .redrive-btn:hover { filter: brightness(1.08); }
+.cancel-btn:disabled,
 .redrive-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* ---------- Footer ---------- */

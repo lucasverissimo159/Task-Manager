@@ -32,7 +32,7 @@ async function getJSON(url, opts) {
 // ---------------------------------------------------------------------------
 
 function renderStats(stats) {
-  for (const key of ['waiting', 'delayed', 'active', 'completed', 'dead']) {
+  for (const key of ['waiting', 'delayed', 'active', 'completed', 'dead', 'cancelled']) {
     document.getElementById(`count-${key}`).textContent = stats.counts[key] ?? 0;
   }
   document.getElementById('readout-throughput').textContent = stats.throughputPerSecond.toFixed(2);
@@ -121,7 +121,7 @@ const jobsBody = document.getElementById('jobs-body');
 
 function renderJobs(jobs) {
   if (jobs.length === 0) {
-    jobsBody.innerHTML = '<tr><td colspan="5" class="empty">no jobs match this filter</td></tr>';
+    jobsBody.innerHTML = '<tr><td colspan="6" class="empty">no jobs match this filter</td></tr>';
     return;
   }
 
@@ -131,12 +131,16 @@ function renderJobs(jobs) {
       seenThisRender.add(job.id);
       const isNew = !state.knownJobIds.has(job.id) && state.knownJobIds.size > 0;
       const updated = job.finishedAt ?? job.startedAt ?? job.createdAt;
+      const cancellable = job.status === 'waiting' || job.status === 'delayed';
       return `<tr class="${isNew ? 'is-new' : ''}">
         <td class="job-id">${job.id.slice(0, 8)}</td>
         <td>${escapeHtml(job.name)}</td>
         <td class="job-status status-${job.status}">${job.status}</td>
         <td>${job.attempts}/${job.maxAttempts}</td>
         <td>${formatTime(updated)}</td>
+        <td class="job-action">
+          <button class="cancel-btn" data-id="${job.id}" ${cancellable ? '' : 'disabled'}>${cancellable ? 'Cancel' : '–'}</button>
+        </td>
       </tr>`;
     })
     .join('');
@@ -163,6 +167,31 @@ document.getElementById('status-filters').addEventListener('click', (e) => {
   state.knownJobIds = new Set(); // avoid a flash-storm when switching filters
   loadJobs();
 });
+
+jobsBody.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.cancel-btn');
+  if (!btn) return;
+  btn.disabled = true;
+  btn.textContent = 'Cancelling…';
+
+  try {
+    await getJSON(`/api/jobs/${encodeURIComponent(btn.dataset.id)}/cancel`, { method: 'POST' });
+    await loadStats();
+    await loadJobs();
+  } catch {
+    btn.disabled = false;
+    btn.textContent = 'Cancel';
+  }
+});
+
+async function loadStats() {
+  try {
+    renderStats(await getJSON('/api/stats'));
+    setLive(true);
+  } catch {
+    setLive(false);
+  }
+}
 
 async function loadJobs() {
   try {
@@ -224,12 +253,7 @@ async function loadDlq() {
 // ---------------------------------------------------------------------------
 
 async function pollStats() {
-  try {
-    renderStats(await getJSON('/api/stats'));
-    setLive(true);
-  } catch {
-    setLive(false);
-  }
+  await loadStats();
 }
 
 pollStats();

@@ -121,6 +121,20 @@ test('a genuinely crashed worker thread is reported exactly once, and the pool s
   }
 });
 
+test('a waiting job can be cancelled before dispatch without losing the queue shape', async () => {
+  const queue = new Queue('integration-cancel', { concurrency: 1, dataDir: tmpDataDir() });
+  try {
+    queue.process('echo', path.join(__dirname, 'fixtures', 'echoHandler.js'));
+
+    const jobId = queue.add('echo', { value: 'cancel-me' });
+    assert.equal(queue.cancel(jobId), true);
+    assert.equal(queue.jobs.get(jobId).status, 'cancelled');
+    assert.equal(queue.listJobs({ status: 'cancelled' }).length, 1);
+  } finally {
+    await queue.close();
+  }
+});
+
 test('compaction prunes completed jobs past retention, but keeps recent and dead ones', async () => {
   const queue = new Queue('integration-retention', {
     concurrency: 1,

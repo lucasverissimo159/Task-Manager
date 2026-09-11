@@ -38,9 +38,9 @@ export class Queue extends EventEmitter {
     this.jobs = new Map(); // id -> Job (every job this queue knows about, any status)
     this.handlers = new Map(); // job name -> absolute handler module path
 
-    this.ready = new PriorityHeap((a, b) =>
-      a.priority !== b.priority ? a.priority > b.priority : a.processAt < b.processAt,
-    );
+    this.readyComparator = (a, b) =>
+      a.priority !== b.priority ? a.priority > b.priority : a.processAt < b.processAt;
+    this.ready = new PriorityHeap(this.readyComparator);
     this.delayed = []; // scanned each tick; fine at portfolio scale (see README limitations)
 
     this.pool = new WorkerPool({ size: concurrency });
@@ -86,6 +86,29 @@ export class Queue extends EventEmitter {
 
     this.emit('job:added', job.toJSON());
     return job.id;
+  }
+
+  /** Cancels a job that has not yet been dispatched to a worker. */
+  cancel(jobId) {
+    const job = this.jobs.get(jobId);
+    if (!job) return false;
+
+    if ([JobStatus.ACTIVE, JobStatus.COMPLETED, JobStatus.DEAD].includes(job.status)) {
+      return false;
+    }
+
+    if (job.status === JobStatus.DELAYED) {
+      this.delayed = this.delayed.filter((queued) => queued.id !== job.id);
+    } else if (job.status === JobStatus.WAITING) {
+      const remaining = this.ready.toArray().filter((queued) => queued.id !== job.id);
+      this.ready = new PriorityHeap(this.readyComparator);
+      for (const queued of remaining) this.ready.push(queued);
+    }
+
+    job.transition(JobStatus.CANCELLED, { finishedAt: Date.now(), error: null });
+    this.#persist(job);
+    this.emit('job:cancelled', job.toJSON());
+    return true;
   }
 
   /** Used by the DLQ to put a previously-dead job back into circulation. */
@@ -238,7 +261,7 @@ export class Queue extends EventEmitter {
 
   /** Live snapshot of queue health — what the dashboard and CLI poll. */
   stats() {
-    const counts = { waiting: 0, delayed: 0, active: 0, completed: 0, dead: 0 };
+    const counts = { waiting: 0, delayed: 0, active: 0, completed: 0, dead: 0, cancelled: 0 };
     for (const job of this.jobs.values()) counts[job.status]++;
     return {
       name: this.name,

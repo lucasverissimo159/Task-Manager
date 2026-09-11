@@ -17,7 +17,8 @@ TaskForge CLI — talks to a running dashboard server (default ${BASE_URL})
 
 Usage:
   node src/cli.js stats
-  node src/cli.js jobs [--status <waiting|active|delayed|completed|dead>]
+  node src/cli.js jobs [--status <waiting|active|delayed|completed|dead|cancelled>]
+  node src/cli.js cancel <jobId>
   node src/cli.js dlq:list
   node src/cli.js dlq:redrive <jobId>
 
@@ -39,6 +40,16 @@ async function main() {
       const res = await fetch(`${BASE_URL}/api/jobs${qs}`);
       const jobs = await res.json();
       console.table(jobs.map((j) => ({ id: j.id, name: j.name, status: j.status, attempts: `${j.attempts}/${j.maxAttempts}` })));
+    } else if (command === 'cancel') {
+      const [jobId] = rest;
+      if (!jobId) {
+        console.error('Usage: node src/cli.js cancel <jobId>');
+        process.exitCode = 1;
+        return;
+      }
+      const res = await fetch(`${BASE_URL}/api/jobs/${encodeURIComponent(jobId)}/cancel`, { method: 'POST' });
+      const body = await res.json();
+      console.log(body.cancelled ? `Cancelled: ${jobId}` : `Could not cancel ${jobId} (not found, already active/completed/dead)`);
     } else if (command === 'dlq:list') {
       const res = await fetch(`${BASE_URL}/api/dlq`);
       const jobs = await res.json();
